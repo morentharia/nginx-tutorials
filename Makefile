@@ -29,6 +29,7 @@ configure:
 						--prefix=$(PREFIX_PATH) \
 						--add-module=$(MODULE_PATH) \
 						--with-debug
-	mkdir -p $(PREFIX_PATH)/conf $(PREFIX_PATH)/logs
+	mkdir -p $(PREFIX_PATH)/conf $(PREFIX_PATH)/logs $(PREFIX_PATH)/www
+	cp -Rf $(MODULE_PATH)/www/* $(PREFIX_PATH)/www
 	cp -Rf $(NGX_PATH)/conf/* $(PREFIX_PATH)/conf
 	cp -f $(MODULE_PATH)/conf/nginx.conf $(PREFIX_PATH)/conf/nginx.conf

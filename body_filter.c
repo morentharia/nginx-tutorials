@@ -10,6 +10,8 @@ typedef struct {
 
 typedef struct {
     ngx_int_t    words;
+    ngx_int_t    replaces_count;
+    ngx_int_t    buffers_count;
 } ngx_http_example_body_ctx_t;
 
 
@@ -93,19 +95,26 @@ ngx_http_example_body_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     lc = ngx_http_get_module_loc_conf(r, ngx_http_example_body_filter_module);
 
     for (cl = in; cl; cl = cl->next) {
+        ++ctx->buffers_count;
 
         b = cl->buf;
 
         i = 0, end = b->last - b->pos;
         for (; i < end; ++i) {
+            b->pos[i] = ngx_toupper(b->pos[i]);
             if (b->pos[i] == lc->word_delimiter.data[0]) {
                 ++ctx->words;
+            }
+            if (b->pos[i] == ',') {
+                b->pos[i] = '*';
+                ctx->replaces_count++;
             }
         }
 
         if (b->last_buf) {
             ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0,
-                    "body_filter -> words: %d", ctx->words);
+                          "body_filter -> words: %d replaces_count: %d, buffers_count: %d",
+                          ctx->words, ctx->replaces_count, ctx->buffers_count);
             ctx->words = 0;
         }
     }
