@@ -8,7 +8,7 @@ NGX_CONFIGURE=./configure
 endif
 ## }}
 
-NGX_PATH    = nginx
+NGX_PATH    = ./nginx
 PREFIX_PATH = $(PWD)/test-root
 MODULE_PATH = $(PWD)
 WZ2         = $(MODULE_PATH)/../wz2

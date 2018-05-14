@@ -94,7 +94,11 @@ ngx_http_example_header_filter(ngx_http_request_t *r)
         return rc;
     }
 
-    if (k.data == NULL) {
+    /* ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "Ok header %s exists", lc->value.data); */
+    /* ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "k.data '%s'", k.data); */
+
+    if (k.data != NULL) {
+        /* ngx_log_error(NGX_LOG_EMERG, r->connection->log, 0, "set cond: %s, value: %s", lc->cond.data, lc->value.data); */
         rc = ngx_header_set(r, &lc->cond, &lc->value);
         if (rc == NGX_ERROR) {
             return rc;
@@ -148,7 +152,7 @@ ngx_http_example_header_filter_init(ngx_conf_t *cf)
 
 static ngx_int_t
 ngx_header_get(ngx_http_request_t *r, const ngx_str_t *header_name,
-        ngx_str_t* k, ngx_str_t *v)
+               ngx_str_t* k, ngx_str_t *v)
 {
     ngx_table_elt_t *h;
     ngx_list_part_t *part;
@@ -158,7 +162,6 @@ ngx_header_get(ngx_http_request_t *r, const ngx_str_t *header_name,
 
     size_t i = 0;
     for (;; i++) {
-
         if (i >= part->nelts) {
             if (part->next == NULL) {
                 break;
@@ -168,11 +171,17 @@ ngx_header_get(ngx_http_request_t *r, const ngx_str_t *header_name,
             i = 0;
         }
 
-        if (ngx_strncmp(h[i].key.data, header_name->data, header_name->len)
-                == 0)
+        if (
+            ngx_strncmp(h[i].key.data, header_name->data, header_name->len) == 0 &&
+            h[i].key.len == header_name->len
+        )
         {
-            k = &h[i].key;
-            v = &h[i].value;
+            /* k = &h[i].key; */
+            /* v = &h[i].value; */
+            k->data = h[i].key.data;
+            k->len = h[i].key.len;
+            v->data = h[i].value.data;
+            v->len = h[i].value.len;
             break;
         }
     }
@@ -182,35 +191,34 @@ ngx_header_get(ngx_http_request_t *r, const ngx_str_t *header_name,
 
 
 static ngx_int_t
-ngx_header_set(ngx_http_request_t *r, const ngx_str_t *n, const ngx_str_t *v)
+ngx_header_set(ngx_http_request_t *r, const ngx_str_t *cond, const ngx_str_t *val)
 {
-	ngx_table_elt_t *header;
-	u_char *name, *name_end, *value, *value_end;
+    ngx_table_elt_t *header;
+    u_char *condition, *condition_end, *value, *value_end;
 
-	name = ngx_pnalloc(r->pool, n->len);
-	if (name == NULL) {
-		return NGX_ERROR;
-	}
-
-    value = ngx_pnalloc(r->pool, v->len);
-    if (value == NULL) {
-      return NGX_ERROR;
+    condition = ngx_pnalloc(r->pool, cond->len);
+    if (condition == NULL) {
+        return NGX_ERROR;
     }
 
-	name_end = ngx_copy(name, n->data, n->len);
-	value_end = ngx_copy(value, v->data, v->len);
+    value = ngx_pnalloc(r->pool, val->len);
+    if (value == NULL) {
+        return NGX_ERROR;
+    }
 
-	header = ngx_list_push(&r->headers_out.headers);
-	if (header == NULL) {
-		return NGX_ERROR;
-	}
+    condition_end = ngx_copy(condition, cond->data, cond->len);
+    value_end = ngx_copy(value, val->data, val->len);
 
-	header->hash = 1;
-    header->key.data = name;
-    header->key.len = name_end - name;
-	header->value.data = value;
-	header->value.len = value_end - value;
+    header = ngx_list_push(&r->headers_out.headers);
+    if (header == NULL) {
+        return NGX_ERROR;
+    }
 
-	return NGX_OK;
+    header->hash = 1;
+    header->key.data = condition;
+    header->key.len = condition_end - condition;
+    header->value.data = value;
+    header->value.len = value_end - value;
+
+    return NGX_OK;
 }
-
